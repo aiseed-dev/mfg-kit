@@ -1,0 +1,10 @@
+<a class="card" href="/p/{{ p.code }}/">
+  {% if p.photos %}<img src="{{ p.photos[0] }}" alt="{{ p.name }}">{% endif %}
+  <h3>{{ p.name }}</h3>
+  {% if p.summary %}<p>{{ p.summary }}</p>{% endif %}
+  <p class="code">{{ p.code }}</p>
+  <dl class="specs">
+    {% for k, v in (p.specs.items() | list)[:2] %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}
+  </dl>
+  <p class="price">{{ p.price_note or "要見積" }}</p>
+</a>

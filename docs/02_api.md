@@ -30,7 +30,7 @@ app_users を自動作成。ページング: ?cursor=<created_at>&limit=20。
 
 ## 社内機能(公開APIとしては実装しない)
 
-社内アプリ(staff/ = Flet)は backend の models / services を import して
+社内アプリ(staff/ = Flet)は backend の services を import して
 DB直結で動く。見積対応(answered_at /
 answered_by の記録)・製品管理(保存時に静的カタログ再生成)・
 基幹APIからの在庫/価格取得・xlsx台帳(quotes/orders)・QRラベルPDF・

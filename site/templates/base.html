@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ company.name }}{% endblock %}</title>
+<meta name="description" content="{% block description %}{{ company.tagline }}{% endblock %}">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/">{{ company.name }}</a>
+  <nav>
+    {% for c in categories %}<a href="/c/{{ c.slug }}/">{{ c.name }}</a>{% endfor %}
+  </nav>
+</header>
+<main>
+{% block main %}{% endblock %}
+</main>
+<footer>
+  <p>{{ company.name }} — {{ company.address }}<br>
+  TEL {{ company.tel }}({{ company.hours }})</p>
+</footer>
+</body>
+</html>

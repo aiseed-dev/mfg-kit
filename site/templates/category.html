@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ cat.name }} | {{ company.name }}{% endblock %}
+{% block description %}{{ company.name }}の{{ cat.name }}一覧{% endblock %}
+{% block main %}
+<h1>{{ cat.name }}</h1>
+<div class="grid">
+  {% for p in products %}{% include "card.html" %}{% endfor %}
+</div>
+{% endblock %}

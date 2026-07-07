@@ -29,7 +29,7 @@ CLAUDE.md に従う。製品カードは 写真 / 一言(summary)/ 型番(code)/
 
 ## 社内アプリ(Flet / Python。左ナビ+メインペイン)
 
-backend の models / services を import し DB直結。
+backend の services を import し DB直結。
 各 view が自分でデータ取得と状態を持つ自己完結型(Widget方針のPython版)。
 ログインのみ PocketBase(answered_by の本人記録のため)。
 実行は会社サーバー上で `flet run --web`(社内LAN / SSHトンネル)。

@@ -20,8 +20,7 @@
 backend/   FastAPI(AGPL-3.0)
   app/
     main.py
-    core/      設定・DB接続・PocketBase トークン検証
-    models/    SQLAlchemy(db/schema.sql と厳密に一致)
+    core/      設定・DB接続(asyncpg プール)・PocketBase トークン検証
     schemas/   Pydantic v2
     routers/   products, cart, quotes, qr(公開・顧客向けのみ)
     services/  業務ロジック・メール送信・台帳生成・静的サイト再生成
@@ -30,7 +29,7 @@ site/      公開静的サイト生成(Python。products → HTML。Pages 配信
 app/       顧客アプリ(Flutter: iOS / Android / Web)。
            **共有パッケージは作らない。** api_client・session・
            モデル・共通 Widget もすべて app/lib 内に自己完結で実装する
-staff/     社内アプリ(Flet / Python)。backend の models / services を
+staff/     社内アプリ(Flet / Python)。backend の services を
            import し DB 直結。ログインのみ PocketBase
            (answered_by の本人記録のため)。会社サーバー内で
            `flet run --web`(社内LAN / SSH トンネル)
@@ -40,7 +39,8 @@ deploy/    Caddyfile・systemd・バックアップスクリプト
 
 ## Python 規約
 
-- Python 3.12+ / FastAPI / SQLAlchemy 2.0(Mapped[])/ Pydantic v2
+- Python 3.12+ / FastAPI / asyncpg(生SQL。ORM は使わない。
+  db/schema.sql が唯一のスキーマ定義)/ Pydantic v2
 - ruff(format+lint)、型ヒント必須、pytest(正常系・認可・
   バリデーションを最低限)
 - メール送信は `services/mail.py` に集約。実体は localhost の

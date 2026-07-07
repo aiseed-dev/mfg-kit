@@ -10,7 +10,7 @@
 | Phase | 内容 | 完了条件 |
 |---|---|---|
 | 0 | 土台: venv・ruff・pytest・docker compose(dev用 PostgreSQL+PocketBase)・schema.sql 適用・core/(設定・DB接続)・GET /healthz | pytest が通り /healthz が 200 |
-| 1 | 公開API: models(schema.sql と一致)・categories / products / qr ルーター・シードスクリプト | シード投入後、curl で製品一覧・QR PNG が取れる |
+| 1 | 公開API: categories / products / qr ルーター(生SQL)・シードスクリプト | シード投入後、curl で製品一覧・QR PNG が取れる |
 | 2 | 顧客API: PocketBase トークン検証・app_users 自動作成・cart → quotes(採番)→ messages・mail.py | pytest で 依頼送信→採番→メール送信(モック)の一連が通る |
 | 3 | 静的生成: services/staticgen + site/ テンプレ → dist/(HTML+catalog JSON)。cf-publish で Pages/R2 へ | ローカルで dist/ が生成され、手元ブラウザでカタログが見える |
 | 4 | 社内アプリ: staff/(Flet)。見積対応→製品管理→在庫参照→xlsx台帳→QRラベルPDF→ユーザー管理 の順 | 見積対応と xlsx 出力が実データで動く |
@@ -21,6 +21,14 @@
 顧客アプリの一巡(依頼→回答→発注)を通しで確認できないため。
 
 ## 実装判断(仕様書に無いことの決定)
+
+### DBアクセス(2026-07-07 変更)
+- **asyncpg 直+生SQL。ORM(SQLAlchemy)は使わない**
+- 理由: db/schema.sql を唯一のスキーマ定義にする(ORM モデルとの
+  二重管理をなくす)。クエリは単純な CRUD ばかりで、SQL がそのまま
+  見える方が引き継ぎやすい。採番などどのみち生SQL が要る
+- JSONB は接続初期化で json codec を設定し dict として読み書き
+- 応答の整形は Pydantic(schemas/)が担う
 
 ### 採番(確定済み・再掲)
 - トランザクション内で `pg_advisory_xact_lock(1)` → `MAX(quote_seq)+1`

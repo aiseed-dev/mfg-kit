@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block main %}
+<section class="hero">
+  <h1>{{ company.tagline }}</h1>
+  <p>{{ company.description }}</p>
+</section>
+<section>
+  <h2>製品カタログ</h2>
+  <div class="grid">
+    {% for c in categories %}
+    <a class="card" href="/c/{{ c.slug }}/">
+      <h3>{{ c.name }}</h3>
+      <p>{{ c.count }}製品</p>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+<section>
+  <h2>製品一覧</h2>
+  <div class="grid">
+    {% for p in products %}{% include "card.html" %}{% endfor %}
+  </div>
+</section>
+{% endblock %}
