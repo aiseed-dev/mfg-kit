@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# 開発用 API サーバー(自動リロード)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec .venv/bin/uvicorn app.main:app --reload --port 8000

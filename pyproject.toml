@@ -1,0 +1,47 @@
+[project]
+name = "mfg"
+version = "0.1.0"
+description = "製造業向け 見積・受注アプリ(1社1式)"
+requires-python = ">=3.12"
+license = { text = "AGPL-3.0-only" }
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.29",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "httpx>=0.27",
+    "segno>=1.6",
+    "openpyxl>=3.1",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# backend/app を `app` パッケージとして editable install する。
+# staff/ からも `from app.services import ...` で backend を使う(CLAUDE.md)
+package-dir = { "app" = "backend/app" }
+packages = ["app"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["backend", "site", "staff"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+asyncio_mode = "auto"

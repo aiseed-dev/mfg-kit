@@ -1,0 +1,26 @@
+[
+  {
+    "label": "api(開発サーバー)",
+    "command": "scripts/api",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always"
+  },
+  {
+    "label": "test(pytest)",
+    "command": ".venv/bin/pytest",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always"
+  },
+  {
+    "label": "lint(ruff)",
+    "command": ".venv/bin/ruff format . && .venv/bin/ruff check --fix .",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always"
+  },
+  {
+    "label": "db-init(スキーマ適用)",
+    "command": "sudo -u postgres scripts/db-init",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always"
+  }
+]

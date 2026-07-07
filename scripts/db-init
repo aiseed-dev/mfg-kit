@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# ローカル PostgreSQL に mfg ロール・DB を作り、schema.sql を適用する。
+# 前提: PostgreSQL がインストール済みで postgres ロールで実行できること
+#   sudo -u postgres scripts/db-init
+# 開発機では peer 認証の都合で sudo -u postgres を推奨
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+DB=${1:-mfg}
+
+psql -tc "SELECT 1 FROM pg_roles WHERE rolname='mfg'" | grep -q 1 ||
+    psql -c "CREATE ROLE mfg LOGIN PASSWORD 'mfg'"
+psql -tc "SELECT 1 FROM pg_database WHERE datname='$DB'" | grep -q 1 ||
+    createdb -O mfg "$DB"
+psql -d "$DB" -c "GRANT ALL ON SCHEMA public TO mfg" >/dev/null
+PGPASSWORD=mfg psql -h localhost -U mfg -d "$DB" -v ON_ERROR_STOP=1 -f db/schema.sql
+echo "ok: $DB に db/schema.sql を適用した"
