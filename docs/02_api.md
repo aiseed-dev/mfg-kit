@@ -18,8 +18,8 @@ app_users を自動作成。ページング: ?cursor=<created_at>&limit=20。
 | メソッド/パス | 内容 |
 |---|---|
 | GET /cart | 見積カート |
-| PUT /cart/items/{product_id} | 追加・数量/個別仕様の変更 |
-| DELETE /cart/items/{product_id} | 削除 |
+| PUT /cart/items/{code} | 追加・数量/個別仕様の変更(キーは製品コード。UUID は外に出さない) |
+| DELETE /cart/items/{code} | 削除 |
 | POST /quotes | 見積依頼送信 {note}。カートを quote_items へ移し、quote_no をDB通し番号(年+連番)で採番。会社へメール通知 |
 | GET /quotes | 自分の依頼一覧(状態・最終メッセージ付き) |
 | GET /quotes/{id} | 依頼詳細 |
