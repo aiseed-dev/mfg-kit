@@ -15,6 +15,7 @@
 CREATE TABLE IF NOT EXISTS app_users (
     id            TEXT PRIMARY KEY,          -- PocketBase record id
     display_name  TEXT NOT NULL,
+    email         TEXT,                      -- 通知先(認証時に PocketBase から取込)
     company_name  TEXT,                      -- 顧客の所属会社
     contact_label TEXT,                      -- 社内スタッフの担当部門/担当者名
     role          TEXT NOT NULL DEFAULT 'customer'

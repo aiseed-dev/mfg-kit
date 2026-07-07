@@ -19,9 +19,10 @@ ROOT = Path(__file__).parents[2]
 
 # テストユーザー(認証は X-Test-User ヘッダーで差し替え。既定 u1)
 USERS = [
-    ("u1", "田中", "取引先A", None, "customer"),
-    ("u2", "鈴木", "取引先B", None, "customer"),
-    ("s1", "山本", None, "営業", "staff"),
+    ("u1", "田中", "tanaka@example.jp", "取引先A", None, "customer"),
+    ("u2", "鈴木", "suzuki@example.jp", "取引先B", None, "customer"),
+    ("s1", "山本", None, None, "営業", "staff"),
+    ("s2", "佐々木", None, None, "製造", "staff"),
 ]
 
 
@@ -37,8 +38,8 @@ async def db_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     conn = sqlite3.connect(path)
     conn.executescript((ROOT / "db" / "schema.sql").read_text())
     conn.executemany(
-        "INSERT INTO app_users (id, display_name, company_name, contact_label,"
-        " role) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO app_users (id, display_name, email, company_name,"
+        " contact_label, role) VALUES (?, ?, ?, ?, ?, ?)",
         USERS,
     )
     conn.commit()

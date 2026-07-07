@@ -88,10 +88,57 @@ def build(
     (outdir / "catalog.json").write_text(json.dumps(catalog, ensure_ascii=False))
 
 
+async def regen(outdir: Path | None = None) -> Path:
+    """DB の公開製品から site/dist を再生成する(製品保存時+日次)。
+    会社情報は site/company.json(導入先ごとに編集)。
+    Pages/R2 へのアップロードは別step(cf-publish)。"""
+    from app.core.db import connect
+
+    company = json.loads((SITE_DIR / "company.json").read_text())
+    db = await connect()
+    try:
+        categories = [
+            dict(r)
+            for r in await db.execute_fetchall(
+                "SELECT slug, name, sort_order FROM categories"
+            )
+        ]
+        rows = await db.execute_fetchall(
+            """
+            SELECT p.code, p.name, c.slug AS category_slug, p.summary,
+                   p.description, p.specs, p.price_note,
+                   COALESCE((SELECT json_group_array(path) FROM
+                              (SELECT path FROM product_photos
+                                WHERE product_id = p.id ORDER BY sort_order)),
+                            '[]') AS photos
+            FROM products p JOIN categories c ON c.id = p.category_id
+            WHERE p.is_public AND p.is_active
+            """
+        )
+    finally:
+        await db.close()
+    products = [
+        {
+            **dict(r),
+            "specs": json.loads(r["specs"]),
+            "photos": json.loads(r["photos"]),
+        }
+        for r in rows
+    ]
+    dest = outdir or SITE_DIR / "dist"
+    build(company, categories, products, dest)
+    return dest
+
+
 def main() -> None:
-    src, dest = Path(sys.argv[1]), Path(sys.argv[2])
-    data = json.loads(src.read_text())
-    build(data["company"], data["categories"], data["products"], dest)
+    if len(sys.argv) > 2:  # サンプル生成: staticgen <src.json> <dest>
+        src, dest = Path(sys.argv[1]), Path(sys.argv[2])
+        data = json.loads(src.read_text())
+        build(data["company"], data["categories"], data["products"], dest)
+    else:  # 本番経路: DB → site/dist
+        import asyncio
+
+        dest = asyncio.run(regen())
     print(f"ok: {dest} に生成した")
 
 

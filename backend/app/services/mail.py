@@ -55,6 +55,15 @@ def quote_requested(
     send(settings.company_mail_to, f"【見積依頼】{quote_no}", "\n".join(lines))
 
 
+def quote_answered(to: str, quote_no: str, body: str) -> None:
+    """見積回答を顧客へ通知(S-01。staff の回答時に services/staff から)"""
+    text = (
+        f"見積 {quote_no} に回答が届きました。\n\n{body}\n\n"
+        "アプリの依頼詳細からご確認・ご返信いただけます。"
+    )
+    send(to, f"【見積回答】{quote_no}", text)
+
+
 def message_received(quote_no: str, sender: dict[str, Any], body: str) -> None:
     """顧客からの新着メッセージを会社へ通知(送信時に即時)"""
     text = (

@@ -58,9 +58,10 @@ async def current_user(
         uid = rec["id"]
         display = rec.get("name") or rec.get("email", "").split("@")[0] or uid
         await db.execute(
-            "INSERT INTO app_users (id, display_name, company_name)"
-            " VALUES (?, ?, ?) ON CONFLICT (id) DO NOTHING",
-            (uid, display, rec.get("company")),
+            "INSERT INTO app_users (id, display_name, email, company_name)"
+            " VALUES (?, ?, ?, ?)"
+            " ON CONFLICT (id) DO UPDATE SET email = excluded.email",
+            (uid, display, rec.get("email"), rec.get("company")),
         )
         _cache[token] = (now + TTL, uid)
 

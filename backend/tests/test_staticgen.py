@@ -25,3 +25,15 @@ def test_build(tmp_path: Path) -> None:
 
     assert (tmp_path / "c/door/index.html").exists()
     assert (tmp_path / "style.css").exists()
+
+
+async def test_regen_from_db(db_path: Path, tmp_path: Path) -> None:
+    """DB(シード済み)→ dist の本番経路。sample 直生成と同じ内容になる"""
+    from app.services.staticgen import regen
+
+    out = tmp_path / "dist"
+    await regen(out)
+    product = (out / "p/DR-100/index.html").read_text()
+    assert "断熱玄関ドア 片開き" in product
+    catalog = json.loads((out / "catalog.json").read_text())
+    assert len(catalog["products"]) == 4
