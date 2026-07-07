@@ -20,7 +20,7 @@
 backend/   FastAPI(AGPL-3.0)
   app/
     main.py
-    core/      設定・DB接続(asyncpg プール)・PocketBase トークン検証
+    core/      設定・DB接続(aiosqlite)・PocketBase トークン検証
     schemas/   Pydantic v2
     routers/   products, cart, quotes, qr(公開・顧客向けのみ)
     services/  業務ロジック・メール送信・台帳生成・静的サイト再生成
@@ -39,8 +39,8 @@ deploy/    Caddyfile・systemd・バックアップスクリプト
 
 ## Python 規約
 
-- Python 3.12+ / FastAPI / asyncpg(生SQL。ORM は使わない。
-  db/schema.sql が唯一のスキーマ定義)/ Pydantic v2
+- Python 3.12+ / FastAPI / SQLite+aiosqlite(生SQL。ORM は使わない。
+  db/schema.sql が唯一のスキーマ定義。接続時に foreign_keys=ON)/ Pydantic v2
 - ruff(format+lint)、型ヒント必須、pytest(正常系・認可・
   バリデーションを最低限)
 - メール送信は `services/mail.py` に集約。実体は localhost の

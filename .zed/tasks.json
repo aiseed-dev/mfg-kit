@@ -19,7 +19,13 @@
   },
   {
     "label": "db-init(スキーマ適用)",
-    "command": "sudo -u postgres scripts/db-init",
+    "command": "scripts/db-init",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always"
+  },
+  {
+    "label": "seed(サンプル投入)",
+    "command": ".venv/bin/python -m app.services.seed",
     "cwd": "$ZED_WORKTREE_ROOT",
     "reveal": "always"
   }

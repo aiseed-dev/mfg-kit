@@ -17,7 +17,7 @@
 | パス | 内容 |
 |---|---|
 | `CLAUDE.md` | Claude Code への実装指示(規約・構成・禁止事項) |
-| `db/schema.sql` | PostgreSQL スキーマ |
+| `db/schema.sql` | SQLite スキーマ(データは data/mfg.db の1ファイル) |
 | `docs/01_requirements.md` | 機能要件 |
 | `docs/02_api.md` | API 仕様(基幹連携・QR 含む) |
 | `docs/03_apps.md` | 画面仕様 |

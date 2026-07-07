@@ -9,7 +9,7 @@
 
 | Phase | 内容 | 完了条件 |
 |---|---|---|
-| 0 | 土台: venv・ruff・pytest・docker compose(dev用 PostgreSQL+PocketBase)・schema.sql 適用・core/(設定・DB接続)・GET /healthz | pytest が通り /healthz が 200 |
+| 0 | 土台: venv・ruff・pytest・schema.sql 適用・core/(設定・DB接続)・GET /healthz | pytest が通り /healthz が 200 |
 | 1 | 公開API: categories / products / qr ルーター(生SQL)・シードスクリプト | シード投入後、curl で製品一覧・QR PNG が取れる |
 | 2 | 顧客API: PocketBase トークン検証・app_users 自動作成・cart → quotes(採番)→ messages・mail.py | pytest で 依頼送信→採番→メール送信(モック)の一連が通る |
 | 3 | 静的生成: services/staticgen + site/ テンプレ → dist/(HTML+catalog JSON)。cf-publish で Pages/R2 へ | ローカルで dist/ が生成され、手元ブラウザでカタログが見える |
@@ -22,18 +22,24 @@
 
 ## 実装判断(仕様書に無いことの決定)
 
-### DBアクセス(2026-07-07 変更)
-- **asyncpg 直+生SQL。ORM(SQLAlchemy)は使わない**
-- 理由: db/schema.sql を唯一のスキーマ定義にする(ORM モデルとの
-  二重管理をなくす)。クエリは単純な CRUD ばかりで、SQL がそのまま
-  見える方が引き継ぎやすい。採番などどのみち生SQL が要る
-- JSONB は接続初期化で json codec を設定し dict として読み書き
+### DB(2026-07-08 変更: SQLite)
+- **SQLite(WAL)+aiosqlite+生SQL。ORM は使わない。**
+  PostgreSQL から変更した(規模に対して運用が重い。1社1式・同一
+  サーバー内アクセスのみなら SQLite で足り、テストも本番と同じ
+  エンジンで今すぐ回せる)
+- データは `data/mfg.db` の1ファイル。PocketBase も SQLite なので、
+  会社に渡すデータは「SQLite ファイル2つ+画像・添付フォルダ」に揃う
+- db/schema.sql を唯一のスキーマ定義にする(ORM モデルとの二重管理を
+  しない)。specs 等の JSON は TEXT 保存でアプリが json.loads/dumps
+- 接続ごとに PRAGMA foreign_keys=ON・busy_timeout。DB 作成時に WAL 化
 - 応答の整形は Pydantic(schemas/)が担う
+- 大規模顧客で PostgreSQL が必要になったらその時に書き直す
+  (先回りの抽象層は作らない)
 
-### 採番(確定済み・再掲)
-- トランザクション内で `pg_advisory_xact_lock(1)` → `MAX(quote_seq)+1`
+### 採番(確定済み。SQLite 版に更新)
+- `BEGIN IMMEDIATE` のトランザクション内で
+  `MAX(quote_seq)+1`(書き込みロックで自然に直列化。リトライ経路なし)
 - `quote_no = f"{year}-{seq:05d}"`(例 2026-00042)。年は **JST** で判定
-- ロックキーは定数 1 番のみ(他用途でアドバイザリロックは使わない)
 
 ### PocketBase トークン検証
 - ミドルウェアが Bearer トークンを PocketBase の `auth-refresh` へ投げて検証し、
@@ -95,9 +101,9 @@
 
 ### 開発環境
 - Python 3.12 + `./.venv`(backend / staff / site 共通、リポジトリ直下)
-- PostgreSQL / PocketBase は開発機に**ローカル直インストール**
-  (Docker 不使用)。接続先は `.env` で指定(DATABASE_URL / PB_URL)。
-  本番も素のインストールなので開発と同型
+- DB は SQLite ファイル(`scripts/db-init` で作成。インストール物なし)。
+  PocketBase のみ単一バイナリをローカルに置く(Docker 不使用)。
+  設定は `.env`(DB_PATH / PB_URL)。本番も同型
 - `.zed/tasks.json` に api(uvicorn)・staff(flet run --web)・test(pytest)・
   gen(静的生成)のタスクを登録
 - 主要コマンドは Makefile ではなく `scripts/`(短いハイフン名)に置く
@@ -105,9 +111,8 @@
 ### テスト方針(pytest)
 - 対象: 正常系・認可(他人の quote に触れない)・バリデーション+採番の直列化
   (同時 INSERT で重複しないこと)
-- DB はローカル PostgreSQL にテスト用 DB(mfg_test)を作り、スキーマを
-  作り直して実行(SQLite 代替はしない: JSONB・アドバイザリロックが
-  本物で動く必要がある)
+- DB はテストごとに tmp の SQLite ファイルへ schema.sql を適用して実行
+  (本番と同じエンジン。サンプルデータは site/sample.json を共用)
 - PocketBase 検証はミドルウェアを差し替えてスタブ化(PB 本体はテスト不要)
 
 ## 確認済み事項(2026-07-07 決定)
@@ -116,8 +121,8 @@
    is_approved は追加しない(S-07 の「承認」は凍結解除を含む運用語と解釈)
 2. **仕様書への追記**: 添付ダウンロード API を 02_api.md、/q/:no ルートを
    03_apps.md に反映済み
-3. **開発機**: PostgreSQL / PocketBase ともローカル直インストール
-   (Docker 不使用)
+3. **開発機**: Docker 不使用。DB は SQLite に変更(2026-07-08、
+   本番ごと。上記「DB」参照)。PocketBase のみローカルに置く
 
 ## しない(CLAUDE.md の再確認)
 

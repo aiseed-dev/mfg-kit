@@ -7,8 +7,8 @@
 - **メール専用機**: Stalwart のみ(DKIM/SPF/DMARC/PTR 設定)。
   省電力機で**常時稼働**(メール配送は止められない:相手サーバーの
   再送に依存し、停止はエラー・遅延として相手に見える)
-- **アプリ機**: FastAPI・PostgreSQL・PocketBase・staff(Flet)・
-  (任意で OnlyOffice)。**計画停止・深夜メンテ可**
+- **アプリ機**: FastAPI・SQLite(data/mfg.db の1ファイル)・PocketBase・
+  staff(Flet)・(任意で OnlyOffice)。**計画停止・深夜メンテ可**
 - 家庭用/事業所ルータのポート転送で振り分け:
   25/465/587/993 → メール機、443 → アプリ機
 - アプリ機からのメール送信は宅内LAN経由でメール機へ SMTP
@@ -29,8 +29,9 @@
 
 ## バックアップ・運用
 
-- 毎晩: pg_dump+画像+PocketBase データを rclone で R2/B2 へ。
-  保持14日。リストア手順書を deploy/ に置く(目標復旧: 半日)
+- 毎晩: SQLite の整合バックアップ(`.backup`)+画像・添付+PocketBase
+  データを rclone で R2/B2 へ。保持14日。リストアは「ファイルを
+  置き戻すだけ」を手順書にして deploy/ に置く(目標復旧: 半日)
 - systemd で FastAPI / PocketBase / staff を常駐。デプロイは
   git pull+restart で足りる(短時間停止は許容)
 - 監視は最小限: Cloudflare Health Check(5分間隔・メール通知)+

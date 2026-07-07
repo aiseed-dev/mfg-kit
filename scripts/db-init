@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
-# ローカル PostgreSQL に mfg ロール・DB を作り、schema.sql を適用する。
-# 前提: PostgreSQL がインストール済みで postgres ロールで実行できること
-#   sudo -u postgres scripts/db-init
-# 開発機では peer 認証の都合で sudo -u postgres を推奨
+# SQLite の DB ファイルを作り db/schema.sql を適用する(何度でも実行可)
+#   scripts/db-init [dbパス]   既定: data/mfg.db
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-DB=${1:-mfg}
+DB=${1:-data/mfg.db}
+mkdir -p "$(dirname "$DB")"
+.venv/bin/python - "$DB" <<'EOF'
+import pathlib
+import sqlite3
+import sys
 
-psql -tc "SELECT 1 FROM pg_roles WHERE rolname='mfg'" | grep -q 1 ||
-    psql -c "CREATE ROLE mfg LOGIN PASSWORD 'mfg'"
-psql -tc "SELECT 1 FROM pg_database WHERE datname='$DB'" | grep -q 1 ||
-    createdb -O mfg "$DB"
-psql -d "$DB" -c "GRANT ALL ON SCHEMA public TO mfg" >/dev/null
-PGPASSWORD=mfg psql -h localhost -U mfg -d "$DB" -v ON_ERROR_STOP=1 -f db/schema.sql
-echo "ok: $DB に db/schema.sql を適用した"
+db = sqlite3.connect(sys.argv[1])
+db.execute("PRAGMA journal_mode=WAL")
+db.executescript(pathlib.Path("db/schema.sql").read_text())
+db.close()
+print(f"ok: {sys.argv[1]} に db/schema.sql を適用した")
+EOF
