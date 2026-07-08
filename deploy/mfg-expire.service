@@ -1,0 +1,9 @@
+# /etc/systemd/system/mfg-expire.service(mfg-expire.timer から起動)
+[Unit]
+Description=mfg expired auto-close (daily job)
+
+[Service]
+Type=oneshot
+User=mfg
+WorkingDirectory=/srv/mfg
+ExecStart=/srv/mfg/.venv/bin/python -m app.jobs.expire

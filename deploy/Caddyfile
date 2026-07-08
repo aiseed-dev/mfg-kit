@@ -1,0 +1,27 @@
+# アプリ機のリバースプロキシ(04_infra)
+# Cloudflare 経由(Full Strict・Origin CA 証明書)。443 は CF レンジのみ許可
+# (nftables 側で制限。deploy/nftables-cf.sh 参照)
+
+api.example.jp {
+	# Origin CA 証明書(Cloudflare ダッシュボードで発行して配置)
+	tls /etc/caddy/origin-cert.pem /etc/caddy/origin-key.pem
+
+	# 公開・顧客向け API(FastAPI)
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	# 認証(PocketBase)
+	handle_path /auth/* {
+		reverse_proxy 127.0.0.1:8090
+	}
+
+	# 製品写真(公開・長期キャッシュ)。添付は認可が要るため API 経由のみ
+	handle_path /images/* {
+		root * /srv/mfg/data/images
+		file_server
+		header Cache-Control "public, max-age=604800"
+	}
+}
+
+# 社内アプリ(Flet)は公開しない。社内LAN / SSHトンネルで 8550 へ直接

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# 毎晩のバックアップ(04_infra)。cron か systemd timer で実行。
+# SQLite は .backup で整合スナップショットを取る(コピー中の書き込みに安全)。
+# rclone のリモート(r2:)は `rclone config` で設定しておく。保持14日。
+set -euo pipefail
+cd /srv/mfg
+
+STAMP=$(date +%Y%m%d)
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+
+sqlite3 data/mfg.db ".backup '$WORK/mfg.db'"
+cp -r pb/pb_data "$WORK/pb_data"
+
+tar -C "$WORK" -czf "$WORK/db-$STAMP.tar.gz" mfg.db pb_data
+rclone copy "$WORK/db-$STAMP.tar.gz" r2:mfg-backup/db/
+rclone sync data/images r2:mfg-backup/images/
+rclone sync data/files r2:mfg-backup/files/
+
+# 保持14日(古い日次アーカイブを削除)
+rclone delete --min-age 14d r2:mfg-backup/db/
+
+echo "ok: backup $STAMP"

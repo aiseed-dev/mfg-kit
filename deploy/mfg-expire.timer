@@ -1,0 +1,11 @@
+# /etc/systemd/system/mfg-expire.timer
+# 有効化: systemctl enable --now mfg-expire.timer
+[Unit]
+Description=mfg expired auto-close (daily 06:00)
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

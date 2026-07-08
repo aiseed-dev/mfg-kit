@@ -1,0 +1,14 @@
+# /etc/systemd/system/mfg-staff.service
+# 社内アプリ。公開しない(社内LAN / SSHトンネルで 8550 へ)
+[Unit]
+Description=mfg staff (Flet)
+After=network.target
+
+[Service]
+User=mfg
+WorkingDirectory=/srv/mfg
+ExecStart=/srv/mfg/.venv/bin/flet run --web --port 8550 staff/main.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
