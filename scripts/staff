@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# 社内アプリ(Flet)を Web モードで起動
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec .venv/bin/flet run --web --port 8550 staff/main.py

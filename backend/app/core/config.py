@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     mail_backend: str = "smtp"  # smtp / console(dev・テスト)
 
     expire_days: int = 14
+    kikan_url: str = ""  # 会社の基幹API。空なら未接続=「要見積」表示
+    export_dir: str = "data/exports"  # 台帳 xlsx・QRラベル PDF の出力先
 
 
 settings = Settings()
