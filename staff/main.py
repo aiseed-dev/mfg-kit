@@ -3,16 +3,22 @@
 実行: 会社サーバー上で `flet run --web staff/main.py`(社内LAN / SSHトンネル)
 開発: scripts/staff
 
-ログイン: 本番は PocketBase(answered_by の本人記録のため)。
-PocketBase 疎通確認まで、開発用にスタッフ選択で代替(pick_staff を差し替える)。
+ログイン: PocketBase auth-with-password(answered_by の本人記録のため)。
+スタッフかどうかの正は app_users.role(付与はユーザー管理 view)。
+初回セットアップのみ、staff/admin が一人もいなければ最初にログインした
+PB ユーザーを admin にする(それ以外の未登録ユーザーは拒否)。
 """
 
 import asyncio
+import os
 
 import flet as ft
+import httpx
 
 from app.core.db import connect
 from views import VIEWS
+
+PB_URL = os.environ.get("PB_URL", "http://localhost:8090")
 
 ICONS = [
     ft.Icons.DASHBOARD,
@@ -25,54 +31,92 @@ ICONS = [
 ]
 
 
-async def _staff_users() -> list[dict]:
+async def _pb_login(email: str, password: str) -> dict:
+    """PocketBase で認証し record を返す。失敗は ValueError(表示用日本語)。"""
+    try:
+        async with httpx.AsyncClient(base_url=PB_URL, timeout=10) as c:
+            r = await c.post(
+                "/api/collections/users/auth-with-password",
+                json={"identity": email, "password": password},
+            )
+    except httpx.HTTPError as e:
+        raise ValueError("認証サーバーに接続できません") from e
+    if r.status_code != 200:
+        raise ValueError("メールまたはパスワードが違います")
+    return r.json()["record"]
+
+
+async def _staff_row(rec: dict) -> dict:
+    """PB record に対応する app_users の staff/admin 行を返す。
+
+    行が無い場合、staff/admin が一人もいなければ初回セットアップとして
+    admin を作る。それ以外は拒否(付与はユーザー管理 view で行う)。
+    """
+    uid = rec["id"]
+    display = rec.get("name") or rec.get("email", "").split("@")[0] or uid
     db = await connect()
     try:
         rows = await db.execute_fetchall(
-            "SELECT * FROM app_users WHERE role IN ('staff', 'admin')"
-            " ORDER BY display_name"
+            "SELECT * FROM app_users WHERE id = ?", (uid,)
         )
-        if not rows:
-            # 初回起動: スタッフ未登録なら管理者を1人作る
+        row = dict(rows[0]) if rows else None
+        if row is None:
+            n = (
+                await db.execute_fetchall(
+                    "SELECT COUNT(*) AS n FROM app_users"
+                    " WHERE role IN ('staff', 'admin')"
+                )
+            )[0]["n"]
+            if n:
+                raise ValueError("スタッフ登録がありません(管理者に依頼してください)")
             await db.execute(
-                "INSERT INTO app_users (id, display_name, role, contact_label)"
-                " VALUES ('admin', '管理者', 'admin', '管理')"
+                "INSERT INTO app_users (id, display_name, email, role, contact_label)"
+                " VALUES (?, ?, ?, 'admin', '管理')",
+                (uid, display, rec.get("email")),
             )
-            rows = await db.execute_fetchall(
-                "SELECT * FROM app_users WHERE role IN ('staff', 'admin')"
+            row = dict(
+                (
+                    await db.execute_fetchall(
+                        "SELECT * FROM app_users WHERE id = ?", (uid,)
+                    )
+                )[0]
             )
+        elif row["role"] not in ("staff", "admin"):
+            raise ValueError("スタッフ権限がありません(管理者に依頼してください)")
+        if row["is_suspended"]:
+            raise ValueError("アカウントが凍結されています")
+        return row
     finally:
         await db.close()
-    return [dict(r) for r in rows]
 
 
 async def pick_staff(page: ft.Page) -> dict:
-    """開発用ログイン: staff/admin から担当者を選ぶ。
-    TODO: PocketBase の auth-with-password に差し替え(PB疎通確認後)"""
-    staff_list = await _staff_users()
+    """PocketBase ログイン。answered_by に PB の user id が入る。"""
     picked: asyncio.Future[dict] = asyncio.get_running_loop().create_future()
 
-    dd = ft.Dropdown(
-        label="担当者",
-        options=[
-            ft.dropdown.Option(
-                u["id"], f"{u['display_name']}({u['contact_label'] or u['role']})"
-            )
-            for u in staff_list
-        ],
-        value=staff_list[0]["id"],
-        width=280,
-    )
+    email = ft.TextField(label="メール", width=280, autofocus=True)
+    pw = ft.TextField(label="パスワード", width=280, password=True,
+                      can_reveal_password=True)
+    msg = ft.Text("", color=ft.Colors.RED)
 
-    def ok(_: object) -> None:
+    async def login(_: object) -> None:
+        msg.value = ""
+        page.update()
+        try:
+            row = await _staff_row(await _pb_login(email.value, pw.value))
+        except ValueError as e:
+            msg.value = str(e)
+            page.update()
+            return
         page.close(dlg)
-        picked.set_result(next(u for u in staff_list if u["id"] == dd.value))
+        picked.set_result(row)
 
+    pw.on_submit = login
     dlg = ft.AlertDialog(
         modal=True,
-        title=ft.Text("担当者を選択(開発モード)"),
-        content=dd,
-        actions=[ft.FilledButton("開始", on_click=ok)],
+        title=ft.Text("スタッフログイン"),
+        content=ft.Column([email, pw, msg], tight=True),
+        actions=[ft.FilledButton("ログイン", on_click=login)],
     )
     page.open(dlg)
     return await picked
@@ -107,4 +151,5 @@ async def main(page: ft.Page) -> None:
     switch(0)
 
 
-ft.app(main)
+if __name__ == "__main__":
+    ft.app(main)
